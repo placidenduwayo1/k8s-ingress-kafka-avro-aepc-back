@@ -62,7 +62,6 @@ spec:
                   name: placide-services-env-variables-cm
                   key: bootstrap_servers_keys
           startupProbe:
-<<<<<<< HEAD
             tcpSocket:
               port: ms-address-port
             initialDelaySeconds: 30
@@ -75,25 +74,8 @@ spec:
           livenessProbe:
             tcpSocket:
               port: ms-address-port
-=======
-            httpGet:
-              port: ms-address-port
-              path: /bs-ms-address
             initialDelaySeconds: 30
             periodSeconds: 15
-          readinessProbe:
-            httpGet:
-              port: ms-address-port
-              path: /bs-ms-address
-            initialDelaySeconds: 30
-            periodSeconds: 15
-          livenessProbe:
-            httpGet:
-              port: ms-address-port
-              path: /bs-ms-address
->>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d
-            initialDelaySeconds: 30
-            periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service

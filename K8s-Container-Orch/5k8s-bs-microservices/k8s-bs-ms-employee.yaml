@@ -56,7 +56,6 @@ spec:
             - containerPort: 8783
               name: ms-employ-port
           startupProbe:
-<<<<<<< HEAD
             tcpSocket:
               port: ms-employ-port
             initialDelaySeconds: 30
@@ -64,26 +63,11 @@ spec:
           readinessProbe:
             tcpSocket:
               port: ms-employ-port
-=======
-            httpGet:
-              port: ms-employ-port
-              path: /bs-ms-employee
-            initialDelaySeconds: 30
-            periodSeconds: 15
-          readinessProbe:
-            httpGet:
-              port: ms-employ-port
-              path: /bs-ms-employee
->>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d
             initialDelaySeconds: 30
             periodSeconds: 15
           livenessProbe:
-            httpGet:
+            tcpSocket:
               port: ms-employ-port
-<<<<<<< HEAD
-=======
-              path: /bs-ms-employee
->>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d
             initialDelaySeconds: 30
             periodSeconds: 15
           env:
