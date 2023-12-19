@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/bs-ms-address")
@@ -64,5 +63,4 @@ public class AddressController {
             AddressCityNotFoundException {
         return inputAddressService.getAddressesOfGivenCity(city);
     }
-
 }
