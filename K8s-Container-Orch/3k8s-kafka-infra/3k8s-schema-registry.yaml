@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schema-registry-service
+  labels:
+    app: schema-registry-service
+  namespace: placide-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: schema-registry-service
+  template:
+    metadata:
+      name: schema-registry-service
+      labels:
+        app: schema-registry-service
+    spec:
+      serviceAccountName: placide-svc-account
+      initContainers:
+        - name: kafkabroker1-ready-checker
+          image: busybox
+          command: ['sh','-c','until nc -z kafka-broker-1 9092; do echo waiting for kafka-broker-1 ready; sleep 5; done;']
+        - name: kafkabroker2-ready-checker
+          image: busybox
+          command: ['sh','-c','until nc -z kafka-broker-2 9093; do echo waiting for kafka-broker-2 ready; sleep 5; done;']
+        - name: kafkabroker3-ready-checker
+          image: busybox
+          command: ['sh','-c','until nc -z kafka-broker-3 9094; do echo waiting for kafka-broker-3 ready; sleep 5; done;']
+      containers:
+        - name: schema-registry-service
+          image: confluentinc/cp-schema-registry:5.4.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+              name: schema-r-port
+          env:
+            - name: SCHEMA_REGISTRY_HOST_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: schema_registry_hostname_key
+            - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: bootstrap_servers_keys
+          startupProbe:
+            tcpSocket:
+              port: schema-r-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: schema-r-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: schema-r-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: schema-registry-service
+  labels:
+    app: schema-registry-service
+  namespace: placide-ns
+spec:
+  selector:
+    app: schema-registry-service
+  ports:
+    - port: 8081
+      protocol: TCP
+      targetPort: 8081
+      name: http
+  type: ClusterIP
+

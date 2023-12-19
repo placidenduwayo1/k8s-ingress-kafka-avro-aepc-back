@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zookeeper
+  labels:
+    app: zookeeper
+  namespace: placide-ns
+spec:
+  selector:
+    matchLabels:
+      app: zookeeper
+  replicas: 1
+  template:
+    metadata:
+      name: zookeeper
+      labels:
+        app: zookeeper
+    spec:
+      serviceAccountName: placide-svc-account
+      containers:
+        - name: zookeeper
+          image: zookeeper:3.4.9
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 2181
+              name: zoo-port
+          startupProbe:
+            tcpSocket:
+              port: zoo-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: zoo-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: zoo-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  labels:
+    app: zookeeper
+  namespace: placide-ns
+spec:
+  selector:
+    app: zookeeper
+  ports:
+    - port: 2181
+      protocol: TCP
+      targetPort: 2181
+      name: http
+  type: ClusterIP
+
+

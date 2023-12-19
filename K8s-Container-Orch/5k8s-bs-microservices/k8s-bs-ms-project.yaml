@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-ingress-kafka-avro-bs-ms-project
+  labels:
+    app: k8s-ingress-kafka-avro-bs-ms-project
+  namespace: placide-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: k8s-ingress-kafka-avro-bs-ms-project
+  template:
+    metadata:
+      name: k8s-ingress-kafka-avro-bs-ms-project
+      labels:
+        app: k8s-ingress-kafka-avro-bs-ms-project
+    spec:
+      serviceAccountName: placide-svc-account
+      initContainers:
+        - name: ms-config-svc-ready-checker
+          image: busybox
+          command:
+            - 'sh'
+            - '-c'
+            - 'until nc -z k8s-ingress-microservices-config-service 8380; do echo waiting for microservices-config-service ready; sleep 5; done;'
+        - name: persistence-db-ready-checker
+          image: busybox
+          command:
+            - 'sh'
+            - '-c'
+            - 'until nc -z mysql-ms-dbs 3306; do echo waiting for database to be ready; sleep 5; done;'
+        - name: kafkabroker1-ready-checker
+          image: busybox
+          command:
+            - 'sh'
+            - '-c'
+            - 'until nc -z kafka-broker-1 9092; do echo waiting for kafka-broker-1 ready; sleep 5; done;'
+        - name: kafkabroker2-ready-checker
+          image: busybox
+          command:
+            - 'sh'
+            - '-c'
+            - 'until nc -z kafka-broker-2 9093; do echo waiting for kafka-broker-2 ready; sleep 5; done;'
+        - name: kafkabroker3-ready-checker
+          image: busybox
+          command:
+            - 'sh'
+            - '-c'
+            - 'until nc -z kafka-broker-3 9094; do echo waiting for kafka-broker-3 ready; sleep 5; done;'
+      containers:
+        - name: k8s-ingress-kafka-avro-bs-ms-project
+          image: placidenduwayo1/k8s-ingress-kafka-avro-bs-ms-project:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8784
+              name: ms-project-port
+          env:
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: bootstrap_servers_keys
+          startupProbe:
+<<<<<<< HEAD
+            tcpSocket:
+              port: ms-project-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: ms-project-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: ms-project-port
+=======
+            httpGet:
+              port: ms-project-port
+              path: /bs-ms-project
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              port: ms-project-port
+              path: /bs-ms-project
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              port: ms-project-port
+              path: /bs-ms-project
+>>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-ingress-kafka-avro-bs-ms-project
+  labels:
+    app: k8s-ingress-kafka-avro-bs-ms-project
+  namespace: placide-ns
+spec:
+  selector:
+    app: k8s-ingress-kafka-avro-bs-ms-project
+  ports:
+    - port: 8784
+      protocol: TCP
+      targetPort: 8784
+      name: http
+  type: ClusterIP

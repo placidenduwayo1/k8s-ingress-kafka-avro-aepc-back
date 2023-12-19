@@ -1,0 +1,84 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: placide-nginx-ingress-routes
+  labels:
+    app: placide-nginx-loadbalancer
+  namespace: placide-ns
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: pn-kafdrop-ui.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: kafdrop-ui-service
+                port:
+                  number: 9000
+            path: /
+            pathType: Prefix
+    - host: pn-config-svc-api.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: k8s-ingress-microservices-config-service
+                port:
+                  number: 8380
+            path: /ms-config-svc
+            pathType: Prefix
+    - host: pn-gateway-api.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: k8s-ingress-gateway-service
+                port:
+                  number: 8786
+            path: /
+<<<<<<< HEAD
+            pathType: Prefix
+=======
+            pathType: Prefix
+    - host: pn-address-api.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: k8s-ingress-kafka-avro-bs-ms-address
+                port:
+                  number: 8781
+            pathType: Prefix
+            path: /bs-ms-address
+    - host: pn-company-api.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: k8s-ingress-kafka-avro-bs-ms-company
+                port:
+                  number: 8782
+            pathType: Prefix
+            path: /bs-ms-company
+    - host: pn-employee-api.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: k8s-ingress-kafka-avro-bs-ms-employee
+                port:
+                  number: 8783
+            pathType: Prefix
+            path: /bs-ms-employee
+    - host: pn-project-api.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: k8s-ingress-kafka-avro-bs-ms-project
+                port:
+                  number: 8784
+            pathType: Prefix
+            path: /bs-ms-project
+>>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d

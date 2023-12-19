@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: placide-ns
+  name: db-credentials
+  labels:
+    app: db-credentials
+type: Opaque
+data:
+  mysql-mdp: "cm9vdA=="
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-ms-dbs
+  labels:
+    app: mysql-ms-dbs
+  namespace: placide-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-ms-dbs
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      name: mysql-ms-dbs
+      labels:
+        app: mysql-ms-dbs
+    spec:
+      serviceAccountName: placide-svc-account
+      containers:
+        - name: mysql-ms-dbs
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3306
+              name: mysql-port
+          startupProbe:
+            tcpSocket:
+              port: mysql-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: mysql-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: mysql-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: mysql-mdp
+          volumeMounts:
+            - name: persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: persistent-storage
+          persistentVolumeClaim:
+            claimName: placide-mysql-pvc
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-ms-dbs
+  labels:
+    app: mysql-ms-dbs
+  namespace: placide-ns
+spec:
+  selector:
+    app: mysql-ms-dbs
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+      name: http
+  type: ClusterIP

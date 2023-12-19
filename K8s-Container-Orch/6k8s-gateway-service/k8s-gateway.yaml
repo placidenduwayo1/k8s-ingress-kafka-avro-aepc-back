@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-ingress-gateway-service
+  labels:
+    app: k8s-ingress-gateway-service
+  namespace: placide-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-ingress-gateway-service
+  template:
+    metadata:
+      name: k8s-ingress-gateway-service
+      labels:
+        app: k8s-ingress-gateway-service
+    spec:
+      serviceAccountName: placide-svc-account
+      containers:
+        - name: k8s-ingress-gateway-service
+          image: placidenduwayo1/k8s-ingress-gateway-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8786
+              name: gateway-port
+          startupProbe:
+            httpGet:
+              port: gateway-port
+              path: /
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              port: gateway-port
+              path: /
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              port: gateway-port
+              path: /
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-ingress-gateway-service
+  namespace: placide-ns
+  labels:
+    app: k8s-ingress-gateway-service
+spec:
+  selector:
+    app: k8s-ingress-gateway-service
+  ports:
+    - port: 8786
+      protocol: TCP
+      name: http
+      targetPort: 8786
+  type: ClusterIP
+      

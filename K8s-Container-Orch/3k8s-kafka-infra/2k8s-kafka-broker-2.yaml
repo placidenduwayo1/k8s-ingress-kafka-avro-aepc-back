@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-broker-2
+  labels:
+    app: kafka-broker-2
+  namespace: placide-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-broker-2
+  template:
+    metadata:
+      name: kafka-broker-2
+      labels:
+        app: kafka-broker-2
+    spec:
+      serviceAccountName: placide-svc-account
+      initContainers:
+        - name: zookeeper-ready-checker
+          image: busybox
+          command: ['sh','-c', 'until nc -z zookeeper 2181; do echo waiting for zookeeper service ready; sleep 5; done;']
+      containers:
+        - name: kafka-broker-2
+          image: obsidiandynamics/kafka
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9093
+              name: broker2-port
+          startupProbe:
+            tcpSocket:
+              port: broker2-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: broker2-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: broker2-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          env:
+            - name: KAFKA_BROKER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: broker_id_1_key
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: zookeeper_connect_key
+            - name: ALLOW_PLAINTEXT_LISTENER
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: allowing_plain_text_lister_key
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: kafka_listeners_security_protocol_map_key
+            - name: KAFKA_LISTENERS
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: kafka_listeners_1_keys
+            - name: KAFKA_ADVERTISED_LISTENERS
+              valueFrom:
+                configMapKeyRef:
+                  name: placide-services-env-variables-cm
+                  key: kafka_advertised_listeners_1_keys
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-broker-2
+  labels:
+    app: kafka-broker-2
+  namespace: placide-ns
+spec:
+  selector:
+    app: kafka-broker-2
+  ports:
+    - port: 9093
+      protocol: TCP
+      name: http
+      targetPort: 9093
+  type: ClusterIP

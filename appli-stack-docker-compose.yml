@@ -1,0 +1,316 @@
+version: '3.8'
+services:
+#################################
+  #mysql: microservices database
+#################################
+  mysql-ms-dbs:
+    image: mysql:8.0
+    container_name: mysql-ms-dbs
+    restart: always
+    ports:
+      - "3307:3306"
+    networks:
+      - kafka-avro-network
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-proot" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - persistence-dbs:/var/lib/mysql
+###########################
+  # kafka infrastructure
+###########################
+  zookeeper:
+    image: zookeeper:3.4.9
+    container_name: zookeeper
+    hostname: zookeeper
+    restart: always
+    ports:
+      - "2181:2181"
+    networks:
+      - kafka-avro-network
+    healthcheck:
+      test: nc -z localhost 2181 || exit -1
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  kafka-broker-1:
+    image: obsidiandynamics/kafka
+    container_name: kafka-broker-1
+    networks:
+      - kafka-avro-network
+    ports:
+      - "9092:9092"
+      - "19092:19092"
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: yes
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://0.0.0.0:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:9092,PLAINTEXT_HOST://localhost:19092
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  kafka-broker-2:
+    image: obsidiandynamics/kafka
+    container_name: kafka-broker-2
+    networks:
+      - kafka-avro-network
+    ports:
+      - "9093:9093"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: yes
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-2:9093,PLAINTEXT_HOST://localhost:29092
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: nc -z localhost 9093 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  kafka-broker-3:
+    image: obsidiandynamics/kafka
+    container_name: kafka-broker-3
+    networks:
+      - kafka-avro-network
+    ports:
+      - "9094:9094"
+      - "39092:39092"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: yes
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9094,PLAINTEXT_HOST://0.0.0.0:39092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-3:9094,PLAINTEXT_HOST://localhost:39092
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: nc -z localhost 9094 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+############################################
+  # schema registry for avro serialization
+#############################################
+  schema-registry-service:
+    image: confluentinc/cp-schema-registry:5.4.0
+    hostname: schema-registry
+    container_name: schema-registry-service
+    depends_on:
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-service
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-broker-1:9092,kafka-broker-2:9093,kafka-broker-3:9094
+    networks:
+      - kafka-avro-network
+############################################
+    # kafdrob interface for managing kafka topics
+#############################################
+  kafdrop-UI:
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop-UI
+    restart: "no"
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: kafka-broker-1:9092,kafka-broker-2:9093,kafka-broker-3:9094
+    depends_on:
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    networks:
+      - kafka-avro-network
+
+##############################
+  # configuration server
+##############################
+  k8s-ingress-microservices-config-service:
+    image: placidenduwayo1/k8s-ingress-microservices-config-service:1.0.0
+    container_name: k8s-ingress-microservices-config-service
+    build:
+      context: ./AEPC-Ms-Config-Gateway-SVC/k8s-ingress-microservices-config-service
+      dockerfile: Dockerfile
+    ports:
+      - "8380:8380"
+    healthcheck:
+      test: [ "CMD", "curl", "-I", "http://k8s-ingress-microservices-config-service:8380" ]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - kafka-avro-network
+
+##############################
+  # business microservices
+##############################
+  k8s-ingress-kafka-avro-bs-ms-address:
+    image: placidenduwayo1/k8s-ingress-kafka-avro-bs-ms-address:1.0.0
+    container_name: k8s-ingress-kafka-avro-bs-ms-address
+    build:
+      context: ./AEPC-Bs-Ms-Backend/k8s-ingress-kafka-avro-clean-archi-bs-ms-address
+      dockerfile: Dockerfile
+    ports:
+      - "8781:8781"
+    networks:
+      - kafka-avro-network
+    depends_on:
+      k8s-ingress-microservices-config-service:
+        condition: service_healthy
+      mysql-ms-dbs:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:9092,kafka-broker-2:9093,kafka-broker-3:9094
+    healthcheck:
+      test: ["CMD","curl","-I","http://k8s-ingress-kafka-avro-bs-ms-address:8781"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  k8s-ingress-kafka-avro-bs-ms-company:
+    image: placidenduwayo1/k8s-ingress-kafka-avro-bs-ms-company:1.0.0
+    container_name: k8s-ingress-kafka-avro-bs-ms-company
+    build:
+      context: ./AEPC-Bs-Ms-Backend/k8s-ingress-kafka-avro-clean-archi-bs-ms-company
+      dockerfile: Dockerfile
+    ports:
+      - "8782:8782"
+    networks:
+      - kafka-avro-network
+    depends_on:
+      k8s-ingress-microservices-config-service:
+        condition: service_healthy
+      mysql-ms-dbs:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:9092,kafka-broker-2:9093,kafka-broker-3:9094
+    healthcheck:
+      test: [ "CMD","curl","-I","http://k8s-ingress-kafka-avro-bs-ms-company:8782" ]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  k8s-ingress-kafka-avro-bs-ms-employee:
+    image: placidenduwayo1/k8s-ingress-kafka-avro-bs-ms-employee:1.0.0
+    container_name: k8s-ingress-kafka-avro-bs-ms-employee
+    build:
+      context: ./AEPC-Bs-Ms-Backend/k8s-ingress-kafka-avro-clean-archi-bs-ms-employee
+      dockerfile: Dockerfile
+    ports:
+      - "8783:8783"
+    networks:
+      - kafka-avro-network
+    depends_on:
+      k8s-ingress-microservices-config-service:
+        condition: service_healthy
+      mysql-ms-dbs:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:9092,kafka-broker-2:9093,kafka-broker-3:9094
+    healthcheck:
+      test: [ "CMD","curl","-I","http://k8s-ingress-kafka-avro-bs-ms-employee:8783" ]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+  
+  k8s-ingress-kafka-avro-bs-ms-project:
+    image: placidenduwayo1/k8s-ingress-kafka-avro-bs-ms-project:1.0.0
+    container_name: k8s-ingress-kafka-avro-bs-ms-project
+    build:
+      context: ./AEPC-Bs-Ms-Backend/k8s-ingress-kafka-avro-clean-archi-bs-ms-project
+      dockerfile: Dockerfile
+    ports:
+      - "8784:8784"
+    networks:
+      - kafka-avro-network
+    depends_on:
+      k8s-ingress-microservices-config-service:
+        condition: service_healthy
+      mysql-ms-dbs:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:9092,kafka-broker-2:9093,kafka-broker-3:9094
+    healthcheck:
+      test: [ "CMD","curl","-I","http://k8s-ingress-kafka-avro-bs-ms-project:8784" ]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+############################
+ # spring cloud gateway service
+#############################
+  k8s-ingress-gateway-service:
+    image: placidenduwayo1/k8s-ingress-gateway-service:latest
+    container_name: k8s-ingress-gateway-service
+    build:
+      context: ./AEPC-Ms-Config-Gateway-SVC/k8s-ingress-gateway-service
+      dockerfile: Dockerfile
+    ports:
+      - "8786:8786"
+    depends_on:
+      k8s-ingress-microservices-config-service:
+        condition: service_healthy
+    networks:
+      - kafka-avro-network
+networks:
+  kafka-avro-network:
+volumes:
+  persistence-dbs:
