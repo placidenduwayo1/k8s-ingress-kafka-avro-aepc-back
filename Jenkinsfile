@@ -1,13 +1,8 @@
 pipeline {
     agent any
     tools {
-<<<<<<< HEAD
         maven 'Maven-3.9.6'
         jdk 'Java-17'
-=======
-        maven 'Maven-3.6.3'
-        jdk 'OpenJdk-17'
->>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d
     }
     stages {
         stage ('Build application services'){
