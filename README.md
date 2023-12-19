@@ -39,11 +39,7 @@ spring cloud configuration server to centralizig into a git repository and distr
 - **avro-schema**: serializes kafka events
 - **kafdrop-ui**: a ui to manage kafka topics and events
 
-<<<<<<< HEAD
 ### kafka architecture inside business microservices
-=======
-    ### kafka architecture inside business microservices
->>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d
 - a model is a java bean that is sent as payload using a REST api, 
 - a spring service build a kafka message with java model,
 - a spring service uses kafka producer to send the kafka message to kafka topic,
@@ -51,7 +47,7 @@ spring cloud configuration server to centralizig into a git repository and distr
 - the final spring service can handle received event as it wants, either to persist it in db or do anything with it.
 
 ### kafka infra summary
-![kafka-infrastructure](https://github.com/placidenduwayo1/k8s-ingress-kafka-avro-back/assets/124048212/763a696a-0d8a-4c3c-94ba-61c9b70ae672)
+![kafka-infrastructure](https://github.com/placidenduwayo1/k8s-ingress-kafka-avro-back/assets/124048212/88c95aa7-3837-4750-9593-592ebfd66544)
 
 - the schemaregistry defines a common schema for all events to publish into kafka topics,
 - avro-schema uses that defined and registered schema to serialize avents,
@@ -94,7 +90,7 @@ spring cloud configuration server to centralizig into a git repository and distr
     ```
      
 ## ci-cd overview
-  ![my-ci-cd-flow](https://github.com/placidenduwayo1/k8s-ingress-kafka-avro-back/assets/124048212/c164022f-72b9-4134-ad77-649535822d95)
+  ![my-ci-cd-flow](https://github.com/placidenduwayo1/k8s-ingress-kafka-avro-back/assets/124048212/517cf618-71d6-4009-80d3-ccc7d052d0b1)
 
 # docker images deployment
  All the services of the application are deployed into docker images: 
@@ -112,12 +108,9 @@ spring cloud configuration server to centralizig into a git repository and distr
 all the docker containers of the application are deployed into a k8s minikube **pn cluster**.
 - **K8s-Container-Orch** contains all k8s containers deployments of the application.
 - each k8s deployment (pods) is exposed using a k8 Service of type **ClusterIP**
-<<<<<<< HEAD
 - **ingress-rules** defines **dns** for 3 cluster ip services: **kafdrop-ui**, **microservices-config-server** (just for test) and **gateway-service**
     - business microservices are accessed throuth the **gateway-service**, then no need to define their dns (Figure: global architecture)
-=======
 - **ingress-rules** defines **dns** of k8s services: ***./K8s-Container-Orch/7k8s-nginx-ingress/k8s-nginx-ingress.yaml***
->>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d
 - **nginx-ingress-controller** is activated into **pn** cluster: ```>minikube addons enable ingress -p pn```
 
 # expoded endpoints by microservices
@@ -265,9 +258,5 @@ list of exposed endpoints by **k8s-ingress-kafka-avro-bs-ms-project** pod:
 
 # global architecture of the project
 - To access to backend, the http user goes through gateway dns ```pn-gateway-api.com```
-<<<<<<< HEAD
-![k8s-ingress-kafka-avro-clean-archi](https://github.com/placidenduwayo1/k8s-ingress-kafka-avro-back/assets/124048212/aa16d08c-7452-4e67-bcc5-a5a35c6b1178)
-=======
-![nginx-ingress-aepc](https://github.com/placidenduwayo1/k8s-ingress-kafka-avro-back/assets/124048212/08fec38e-355d-4c6f-bb11-277bd542ec9e)
+![nginx-ingress-aepc](https://github.com/placidenduwayo1/k8s-ingress-kafka-avro-back/assets/124048212/6139a9c2-f8ea-400c-8f58-c45a58265e9b)
 
->>>>>>> 42dfcfcffd400354e6a015915cb8725f4fb7f91d
