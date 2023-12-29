@@ -26,6 +26,9 @@ the whole application is divided into:
 - employee
 - company
 - project
+  ## modeling
+  ![AEPC](https://github.com/placidenduwayo1/k8s-ingress-kafka-avro-aepc-back/assets/124048212/ee999c04-d0cb-4fab-885e-1be141992c49)
+
 
 # 2. utility services
 
